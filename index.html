@@ -3,72 +3,71 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Slayd Generator</title>
+<title>Slayd Generator PRO</title>
 
 <style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+
 body{
-  margin:0;
-  font-family:Arial;
-  display:flex;
-  height:100vh;
+  background:#0f172a;
+  color:white;
 }
 
-/* LEFT PANEL */
-.panel{
-  width:35%;
-  background:#111827;
-  color:white;
+/* HEADER */
+.header{
   padding:15px;
-  box-sizing:border-box;
+  text-align:center;
+  font-weight:bold;
+  font-size:18px;
+  background:#111827;
+}
+
+/* FORM */
+.panel{
+  padding:15px;
 }
 
 input, textarea{
   width:100%;
+  padding:12px;
   margin-bottom:10px;
-  padding:10px;
-  border-radius:10px;
   border:none;
+  border-radius:12px;
+  background:#1f2937;
+  color:white;
 }
 
 textarea{height:80px;}
 
 button{
   width:100%;
-  padding:10px;
-  margin-bottom:10px;
+  padding:12px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
+  margin-bottom:10px;
+  font-weight:bold;
   cursor:pointer;
 }
 
-.add{background:#22c55e;color:white;}
-.export{background:#3b82f6;color:white;}
+.add{background:#22c55e;}
+.export{background:#3b82f6;}
 
-/* RIGHT PREVIEW */
+/* SLIDE PREVIEW */
 .preview{
-  width:65%;
-  background:#0f172a;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  padding:15px;
 }
 
 .slide{
-  width:80%;
-  height:80%;
   background:white;
+  color:black;
   border-radius:20px;
-  padding:20px;
-  display:flex;
-  justify-content:space-between;
-}
-
-.left{
-  width:55%;
+  padding:15px;
+  margin-bottom:15px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
 }
 
 .title{
-  font-size:24px;
+  font-size:20px;
   font-weight:bold;
 }
 
@@ -77,85 +76,106 @@ button{
   margin-bottom:10px;
 }
 
-.card{
-  width:40%;
-  text-align:center;
+.text{
+  margin-bottom:10px;
 }
 
-img{
+.card img{
   width:100%;
-  border-radius:15px;
+  border-radius:12px;
 }
 
 iframe{
   width:100%;
-  height:150px;
+  height:180px;
+  border-radius:12px;
   margin-top:10px;
-  border-radius:10px;
+  border:none;
+}
+
+/* DESKTOP */
+@media(min-width:768px){
+  body{
+    display:flex;
+  }
+  .panel{
+    width:35%;
+    height:100vh;
+    overflow:auto;
+  }
+  .preview{
+    width:65%;
+    height:100vh;
+    overflow:auto;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<!-- LEFT -->
 <div class="panel">
-<h2>🎨 Slayd yaratish</h2>
+<div class="header">🎨 Slayd Generator</div>
 
 <input id="title" placeholder="Title">
 <input id="subtitle" placeholder="Subtitle">
-<textarea id="text" placeholder="Matn"></textarea>
-<input id="image" placeholder="Rasm link">
+<textarea id="text" placeholder="Matn yozing..."></textarea>
+<input id="image" placeholder="Rasm link (.jpg)">
 <input id="video" placeholder="YouTube link">
 
-<button class="add" onclick="generate()">➕ Slayd qo‘shish</button>
-<button class="export" onclick="exportHTML()">📤 HTML yuklab olish</button>
+<button class="add" onclick="addSlide()">➕ Slayd qo‘shish</button>
+<button class="export" onclick="exportHTML()">📤 Yuklab olish</button>
 </div>
 
-<!-- RIGHT -->
-<div class="preview">
-  <div id="result"></div>
-</div>
+<div class="preview" id="preview"></div>
 
 <script>
 let slides = [];
 
 function getVideoId(url){
   if(!url) return "";
-  let id = url.split("v=")[1] || url.split("/").pop();
+  let id = url.includes("v=") ? url.split("v=")[1] : url.split("/").pop();
   return id.split("?")[0];
 }
 
-function generate(){
+function addSlide(){
   let t = document.getElementById("title").value;
   let sub = document.getElementById("subtitle").value;
   let txt = document.getElementById("text").value;
   let img = document.getElementById("image").value;
   let vid = getVideoId(document.getElementById("video").value);
 
-  let html = `
-  <section class="slide">
-    <div class="left">
-      <div class="title">${t}</div>
-      <div class="subtitle">${sub}</div>
-      <div>${txt}</div>
-    </div>
+  let slideHTML = `
+  <div class="slide">
+    <div class="title">${t}</div>
+    <div class="subtitle">${sub}</div>
+    <div class="text">${txt}</div>
+
     <div class="card">
-      <img src="${img}">
+      ${img ? `<img src="${img}">` : ""}
       ${vid ? `<iframe src="https://www.youtube.com/embed/${vid}"></iframe>` : ""}
     </div>
-  </section>
+  </div>
   `;
 
-  slides.push(html);
-  document.getElementById("result").innerHTML = html;
+  slides.push(slideHTML);
+  document.getElementById("preview").innerHTML += slideHTML;
+
+  document.getElementById("title").value="";
+  document.getElementById("subtitle").value="";
+  document.getElementById("text").value="";
+  document.getElementById("image").value="";
+  document.getElementById("video").value="";
 }
 
 function exportHTML(){
   let full = `
   <!doctype html>
   <html>
-  <head><meta charset="utf-8"><title>Slaydlar</title></head>
+  <head>
+  <meta charset="utf-8">
+  <title>Slaydlar</title>
+  </head>
   <body>
   ${slides.join("")}
   </body>
