@@ -3,243 +3,210 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Slide PRO System</title>
+<title>Slide Ultimate</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
 
 body{
-  background:linear-gradient(135deg,#0f172a,#1e293b);
-  color:white;
+ background:#0f172a;
+ color:white;
+ display:flex;
+ height:100vh;
 }
 
-/* LAYOUT */
-.container{
-  display:flex;
-  height:100vh;
-}
-
+/* PANEL */
 .panel{
-  width:35%;
-  background:#111827;
-  padding:15px;
-  overflow:auto;
+ width:30%;
+ background:#111827;
+ padding:10px;
+ overflow:auto;
 }
 
-.preview{
-  width:65%;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-}
-
-/* FORM */
 input,textarea{
-  width:100%;
-  padding:10px;
-  margin-bottom:10px;
-  border-radius:10px;
-  border:none;
-  background:#1f2937;
-  color:white;
+ width:100%;
+ padding:8px;
+ margin-bottom:8px;
+ border:none;
+ border-radius:8px;
+ background:#1f2937;
+ color:white;
 }
 
 button{
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  margin-bottom:10px;
-  cursor:pointer;
-  font-weight:bold;
+ width:100%;
+ padding:8px;
+ margin-bottom:8px;
+ border:none;
+ border-radius:8px;
+ cursor:pointer;
 }
 
 .add{background:#22c55e;}
 .save{background:#3b82f6;}
-.clear{background:#ef4444;}
+.play{background:#f59e0b;}
 
-/* SLIDE */
+/* PREVIEW */
+.preview{
+ width:70%;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ position:relative;
+}
+
 .slide{
-  width:80%;
-  height:70%;
-  background:white;
-  color:black;
-  border-radius:20px;
-  padding:20px;
-  position:absolute;
-  transition:0.4s;
-  opacity:0;
-  transform:scale(0.9);
+ width:80%;
+ height:80%;
+ background:white;
+ color:black;
+ border-radius:20px;
+ position:absolute;
+ overflow:hidden;
 }
 
-.slide.active{
-  opacity:1;
-  transform:scale(1);
-  z-index:10;
+.element{
+ position:absolute;
+ cursor:move;
+ padding:5px;
 }
 
-.title{font-size:24px;font-weight:bold;}
-.subtitle{color:gray;margin-bottom:10px;}
-.text{margin-bottom:10px;}
-
-.card img{
-  width:100%;
-  border-radius:10px;
-}
-
-iframe{
-  width:100%;
-  height:150px;
-  border-radius:10px;
-  margin-top:10px;
+.resize{
+ width:10px;
+ height:10px;
+ background:red;
+ position:absolute;
+ right:0;
+ bottom:0;
+ cursor:se-resize;
 }
 
 /* CONTROLS */
 .controls{
-  position:absolute;
-  bottom:20px;
+ position:absolute;
+ bottom:20px;
 }
 
 .btn{
-  padding:10px 15px;
-  margin:5px;
-  border:none;
-  border-radius:10px;
-  background:#6366f1;
-  color:white;
-}
-
-/* LIST */
-.list{
-  margin-top:10px;
-}
-
-.item{
-  background:#1f2937;
-  padding:8px;
-  margin-bottom:5px;
-  border-radius:8px;
-  cursor:grab;
+ padding:10px;
+ margin:5px;
+ border:none;
+ border-radius:10px;
+ background:#6366f1;
+ color:white;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-
-<!-- PANEL -->
 <div class="panel">
-<h2>🎨 Slide PRO</h2>
+<h3>🎨 Editor</h3>
 
-<input id="title" placeholder="Title">
-<input id="subtitle" placeholder="Subtitle">
-<textarea id="text" placeholder="Matn"></textarea>
+<input id="textInput" placeholder="Matn">
+<button class="add" onclick="addText()">➕ Text</button>
 
-<input type="file" id="imageUpload">
+<input type="file" id="imgInput">
+<button class="add" onclick="addImage()">🖼 Image</button>
 
-<input id="video" placeholder="YouTube link">
+<input id="videoInput" placeholder="YouTube link">
+<button class="add" onclick="addVideo()">🎬 Video</button>
 
-<button class="add" onclick="addSlide()">➕ Qo‘shish</button>
-<button class="save" onclick="saveProject()">💾 Save</button>
-<button class="clear" onclick="clearProject()">🗑 Clear</button>
-
-<h3>📂 Slaydlar</h3>
-<div id="list" class="list"></div>
-
+<button class="save" onclick="save()">💾 Save</button>
+<button class="play" onclick="playSlides()">▶ Slideshow</button>
 </div>
 
-<!-- PREVIEW -->
-<div class="preview" id="preview"></div>
+<div class="preview" id="preview">
+  <div class="slide" id="slide"></div>
 
-<div class="controls">
-<button class="btn" onclick="prev()">⬅️</button>
-<button class="btn" onclick="next()">➡️</button>
-</div>
-
+  <div class="controls">
+    <button class="btn" onclick="prev()">⬅️</button>
+    <button class="btn" onclick="next()">➡️</button>
+  </div>
 </div>
 
 <script>
-let slides = JSON.parse(localStorage.getItem("slides")) || [];
+let slides = JSON.parse(localStorage.getItem("slides")) || [[]];
 let current = 0;
+let slide = document.getElementById("slide");
 
 // VIDEO ID
 function getVideoId(url){
  if(!url) return "";
- let id = url.includes("v=") ? url.split("v=")[1] : url.split("/").pop();
+ let id = url.includes("v=")?url.split("v=")[1]:url.split("/").pop();
  return id.split("?")[0];
 }
 
-// ADD SLIDE
-function addSlide(){
- let t = title.value;
- let s = subtitle.value;
- let txt = text.value;
- let file = imageUpload.files[0];
- let vid = getVideoId(video.value);
+// CREATE ELEMENT
+function createElement(html){
+ let el = document.createElement("div");
+ el.className="element";
+ el.innerHTML = html + `<div class="resize"></div>`;
 
- if(file){
-  let reader = new FileReader();
-  reader.onload = function(e){
-    slides.push({t,s,txt,img:e.target.result,vid});
-    update();
-  }
-  reader.readAsDataURL(file);
- }else{
-  slides.push({t,s,txt,img:"",vid});
-  update();
- }
+ el.style.top="50px";
+ el.style.left="50px";
+
+ // DRAG
+ el.onmousedown=function(e){
+   let shiftX=e.clientX-el.offsetLeft;
+   let shiftY=e.clientY-el.offsetTop;
+
+   function move(e){
+     el.style.left=e.clientX-shiftX+"px";
+     el.style.top=e.clientY-shiftY+"px";
+   }
+
+   document.addEventListener("mousemove",move);
+   document.onmouseup=()=>document.removeEventListener("mousemove",move);
+ };
+
+ // RESIZE
+ let res = el.querySelector(".resize");
+ res.onmousedown=function(e){
+   e.stopPropagation();
+   document.onmousemove=function(ev){
+     el.style.width=ev.clientX-el.offsetLeft+"px";
+     el.style.height=ev.clientY-el.offsetTop+"px";
+   };
+   document.onmouseup=()=>document.onmousemove=null;
+ };
+
+ slide.appendChild(el);
+ slides[current].push(el.outerHTML);
+}
+
+// ADD TEXT
+function addText(){
+ createElement(`<div>${textInput.value}</div>`);
+}
+
+// ADD IMAGE
+function addImage(){
+ let file = imgInput.files[0];
+ let reader = new FileReader();
+ reader.onload=e=>{
+  createElement(`<img src="${e.target.result}" style="width:100%">`);
+ };
+ reader.readAsDataURL(file);
+}
+
+// ADD VIDEO
+function addVideo(){
+ let id = getVideoId(videoInput.value);
+ createElement(`<iframe src="https://www.youtube.com/embed/${id}" width="200" height="150"></iframe>`);
 }
 
 // RENDER
 function render(){
- preview.innerHTML = "";
-
- slides.forEach((sl,i)=>{
-  let div = document.createElement("div");
-  div.className = "slide" + (i===current?" active":"");
-
-  div.innerHTML = `
-    <div class="title">${sl.t}</div>
-    <div class="subtitle">${sl.s}</div>
-    <div class="text">${sl.txt}</div>
-    <div class="card">
-      ${sl.img ? `<img src="${sl.img}">` : ""}
-      ${sl.vid ? `<iframe src="https://www.youtube.com/embed/${sl.vid}"></iframe>` : ""}
-    </div>
-  `;
-  preview.appendChild(div);
+ slide.innerHTML="";
+ slides[current].forEach(h=>{
+   let div=document.createElement("div");
+   div.innerHTML=h;
+   slide.appendChild(div.firstChild);
  });
 }
 
-// LIST + DRAG
-function update(){
- render();
- list.innerHTML = "";
-
- slides.forEach((sl,i)=>{
-  let d = document.createElement("div");
-  d.className="item";
-  d.draggable=true;
-  d.innerText=sl.t || "Slide";
-
-  d.ondragstart=()=>drag=i;
-  d.ondragover=e=>e.preventDefault();
-  d.ondrop=()=>{
-    let temp=slides[drag];
-    slides[drag]=slides[i];
-    slides[i]=temp;
-    update();
-  };
-
-  list.appendChild(d);
- });
-
- localStorage.setItem("slides",JSON.stringify(slides));
-}
-
-// NAVIGATION
+// NAV
 function next(){
  if(current<slides.length-1){current++;render();}
 }
@@ -248,21 +215,25 @@ function prev(){
 }
 
 // SAVE
-function saveProject(){
+function save(){
  localStorage.setItem("slides",JSON.stringify(slides));
  alert("Saved 💾");
 }
 
-// CLEAR
-function clearProject(){
- slides=[];
- current=0;
- update();
+// AUTO SLIDESHOW
+function playSlides(){
+ let i=0;
+ let interval=setInterval(()=>{
+   current=i;
+   render();
+   i++;
+   if(i>=slides.length) clearInterval(interval);
+ },2000);
 }
 
 // INIT
-update();
+render();
 </script>
 
 </body>
-</html> 
+</html>
