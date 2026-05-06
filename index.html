@@ -3,192 +3,266 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Slayd Generator PRO</title>
+<title>Slide PRO System</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
 
 body{
-  background:#0f172a;
+  background:linear-gradient(135deg,#0f172a,#1e293b);
   color:white;
 }
 
-/* HEADER */
-.header{
-  padding:15px;
-  text-align:center;
-  font-weight:bold;
-  font-size:18px;
+/* LAYOUT */
+.container{
+  display:flex;
+  height:100vh;
+}
+
+.panel{
+  width:35%;
   background:#111827;
+  padding:15px;
+  overflow:auto;
+}
+
+.preview{
+  width:65%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
 }
 
 /* FORM */
-.panel{
-  padding:15px;
-}
-
-input, textarea{
+input,textarea{
   width:100%;
-  padding:12px;
+  padding:10px;
   margin-bottom:10px;
+  border-radius:10px;
   border:none;
-  border-radius:12px;
   background:#1f2937;
   color:white;
 }
 
-textarea{height:80px;}
-
 button{
   width:100%;
-  padding:12px;
+  padding:10px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
   margin-bottom:10px;
-  font-weight:bold;
   cursor:pointer;
+  font-weight:bold;
 }
 
 .add{background:#22c55e;}
-.export{background:#3b82f6;}
+.save{background:#3b82f6;}
+.clear{background:#ef4444;}
 
-/* SLIDE PREVIEW */
-.preview{
-  padding:15px;
-}
-
+/* SLIDE */
 .slide{
+  width:80%;
+  height:70%;
   background:white;
   color:black;
   border-radius:20px;
-  padding:15px;
-  margin-bottom:15px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.5);
+  padding:20px;
+  position:absolute;
+  transition:0.4s;
+  opacity:0;
+  transform:scale(0.9);
 }
 
-.title{
-  font-size:20px;
-  font-weight:bold;
+.slide.active{
+  opacity:1;
+  transform:scale(1);
+  z-index:10;
 }
 
-.subtitle{
-  color:gray;
-  margin-bottom:10px;
-}
-
-.text{
-  margin-bottom:10px;
-}
+.title{font-size:24px;font-weight:bold;}
+.subtitle{color:gray;margin-bottom:10px;}
+.text{margin-bottom:10px;}
 
 .card img{
   width:100%;
-  border-radius:12px;
+  border-radius:10px;
 }
 
 iframe{
   width:100%;
-  height:180px;
-  border-radius:12px;
+  height:150px;
+  border-radius:10px;
   margin-top:10px;
-  border:none;
 }
 
-/* DESKTOP */
-@media(min-width:768px){
-  body{
-    display:flex;
-  }
-  .panel{
-    width:35%;
-    height:100vh;
-    overflow:auto;
-  }
-  .preview{
-    width:65%;
-    height:100vh;
-    overflow:auto;
-  }
+/* CONTROLS */
+.controls{
+  position:absolute;
+  bottom:20px;
+}
+
+.btn{
+  padding:10px 15px;
+  margin:5px;
+  border:none;
+  border-radius:10px;
+  background:#6366f1;
+  color:white;
+}
+
+/* LIST */
+.list{
+  margin-top:10px;
+}
+
+.item{
+  background:#1f2937;
+  padding:8px;
+  margin-bottom:5px;
+  border-radius:8px;
+  cursor:grab;
 }
 </style>
 </head>
 
 <body>
 
+<div class="container">
+
+<!-- PANEL -->
 <div class="panel">
-<div class="header">🎨 Slayd Generator</div>
+<h2>🎨 Slide PRO</h2>
 
 <input id="title" placeholder="Title">
 <input id="subtitle" placeholder="Subtitle">
-<textarea id="text" placeholder="Matn yozing..."></textarea>
-<input id="image" placeholder="Rasm link (.jpg)">
+<textarea id="text" placeholder="Matn"></textarea>
+
+<input type="file" id="imageUpload">
+
 <input id="video" placeholder="YouTube link">
 
-<button class="add" onclick="addSlide()">➕ Slayd qo‘shish</button>
-<button class="export" onclick="exportHTML()">📤 Yuklab olish</button>
+<button class="add" onclick="addSlide()">➕ Qo‘shish</button>
+<button class="save" onclick="saveProject()">💾 Save</button>
+<button class="clear" onclick="clearProject()">🗑 Clear</button>
+
+<h3>📂 Slaydlar</h3>
+<div id="list" class="list"></div>
+
 </div>
 
+<!-- PREVIEW -->
 <div class="preview" id="preview"></div>
 
+<div class="controls">
+<button class="btn" onclick="prev()">⬅️</button>
+<button class="btn" onclick="next()">➡️</button>
+</div>
+
+</div>
+
 <script>
-let slides = [];
+let slides = JSON.parse(localStorage.getItem("slides")) || [];
+let current = 0;
 
+// VIDEO ID
 function getVideoId(url){
-  if(!url) return "";
-  let id = url.includes("v=") ? url.split("v=")[1] : url.split("/").pop();
-  return id.split("?")[0];
+ if(!url) return "";
+ let id = url.includes("v=") ? url.split("v=")[1] : url.split("/").pop();
+ return id.split("?")[0];
 }
 
+// ADD SLIDE
 function addSlide(){
-  let t = document.getElementById("title").value;
-  let sub = document.getElementById("subtitle").value;
-  let txt = document.getElementById("text").value;
-  let img = document.getElementById("image").value;
-  let vid = getVideoId(document.getElementById("video").value);
+ let t = title.value;
+ let s = subtitle.value;
+ let txt = text.value;
+ let file = imageUpload.files[0];
+ let vid = getVideoId(video.value);
 
-  let slideHTML = `
-  <div class="slide">
-    <div class="title">${t}</div>
-    <div class="subtitle">${sub}</div>
-    <div class="text">${txt}</div>
+ if(file){
+  let reader = new FileReader();
+  reader.onload = function(e){
+    slides.push({t,s,txt,img:e.target.result,vid});
+    update();
+  }
+  reader.readAsDataURL(file);
+ }else{
+  slides.push({t,s,txt,img:"",vid});
+  update();
+ }
+}
 
+// RENDER
+function render(){
+ preview.innerHTML = "";
+
+ slides.forEach((sl,i)=>{
+  let div = document.createElement("div");
+  div.className = "slide" + (i===current?" active":"");
+
+  div.innerHTML = `
+    <div class="title">${sl.t}</div>
+    <div class="subtitle">${sl.s}</div>
+    <div class="text">${sl.txt}</div>
     <div class="card">
-      ${img ? `<img src="${img}">` : ""}
-      ${vid ? `<iframe src="https://www.youtube.com/embed/${vid}"></iframe>` : ""}
+      ${sl.img ? `<img src="${sl.img}">` : ""}
+      ${sl.vid ? `<iframe src="https://www.youtube.com/embed/${sl.vid}"></iframe>` : ""}
     </div>
-  </div>
   `;
-
-  slides.push(slideHTML);
-  document.getElementById("preview").innerHTML += slideHTML;
-
-  document.getElementById("title").value="";
-  document.getElementById("subtitle").value="";
-  document.getElementById("text").value="";
-  document.getElementById("image").value="";
-  document.getElementById("video").value="";
+  preview.appendChild(div);
+ });
 }
 
-function exportHTML(){
-  let full = `
-  <!doctype html>
-  <html>
-  <head>
-  <meta charset="utf-8">
-  <title>Slaydlar</title>
-  </head>
-  <body>
-  ${slides.join("")}
-  </body>
-  </html>
-  `;
+// LIST + DRAG
+function update(){
+ render();
+ list.innerHTML = "";
 
-  let blob = new Blob([full], {type:"text/html"});
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "slides.html";
-  a.click();
+ slides.forEach((sl,i)=>{
+  let d = document.createElement("div");
+  d.className="item";
+  d.draggable=true;
+  d.innerText=sl.t || "Slide";
+
+  d.ondragstart=()=>drag=i;
+  d.ondragover=e=>e.preventDefault();
+  d.ondrop=()=>{
+    let temp=slides[drag];
+    slides[drag]=slides[i];
+    slides[i]=temp;
+    update();
+  };
+
+  list.appendChild(d);
+ });
+
+ localStorage.setItem("slides",JSON.stringify(slides));
 }
+
+// NAVIGATION
+function next(){
+ if(current<slides.length-1){current++;render();}
+}
+function prev(){
+ if(current>0){current--;render();}
+}
+
+// SAVE
+function saveProject(){
+ localStorage.setItem("slides",JSON.stringify(slides));
+ alert("Saved 💾");
+}
+
+// CLEAR
+function clearProject(){
+ slides=[];
+ current=0;
+ update();
+}
+
+// INIT
+update();
 </script>
 
 </body>
-</html>
+</html> 
